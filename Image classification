@@ -1,0 +1,92 @@
+import os  
+import zipfile  
+from google.colab import drive  
+drive.mount('/content/drive')  
+os.environ["KAGGLE_CONFIG_DIR"] = "/content/drive/MyDrive/Kaggle/ETA14/5_flowers"  
+import numpy as np  import os import cv2 import shutil import random as rn from tqdm import tqdm import matplotlib.pyplot as plt import tensorflow as tf  
+from tensorflow import keras from tensorflow.keras import layers import glob from skimage import io from tensorflow.keras.models import Sequential  
+data_dir ="/content/drive/MyDrive/Kaggle/ETA14/5_flowers" 
+print(os.listdir("/content/drive/MyDrive/Kaggle/ETA14/5_flow e rs")) batch_size = 32 img_height = 180 img_width = 180  
+train_ds = tf.keras.preprocessing.image_dataset_from_directory(  
+data_dir, validation_split=0.2, subset="training", seed=123, image_size=(img_height, img_width), batch_size=batch_size)  val_ds = tf.keras.preprocessing.image_dataset_from_directory(  
+data_dir, validation_split=0.2, subset="validation", seed=123, image_size=(img_height, img_width), batch_size=batch_size)  
+class_names = train_ds.class_names print(class_names) import matplotlib.pyplot as plt  
+plt.figure(figsize=(10, 10)) for images, labels in train_ds.take(1): 
+for i in range(6):  
+ax = plt.subplot(3, 3, i + 1) 
+plt.imshow(images[i].numpy().astype("uin t8")) plt.title(class_names[labels[i]]) plt.axis("off") for image_batch, labels_batch in train_ds: print(image_batch.shape)  print(labels_batch.shape) break  
+AUTOTUNE = tf.data.AUTOTUNE  
+train_ds =  
+train_ds.cache().shuffle(1000).prefetch(buffer_size=AUTOTUNE) val_ds 	= 	val_ds.cache().prefetch(buffer_size=AUTOTUNE) normalization_layer =  
+layers.experimental.preprocessing.Rescaling(1./255) normalized_ds = train_ds.map(lambda x, y: (normalization_layer(x), y)) image_batch, labels_batch = next(iter(normalized_ds)) first_image = image_batch[0] # Notice the pixels values are now in `[0,1]`.  print(np.min(first_image), np.max(first_image)) num_classes = 21  
+model = Sequential([  
+layers.experimental.preprocessing.Rescaling(1./255, input_shape=(img_height,  
+img_width, 3)),  
+layers.Conv2D(16, 3, padding='same', activation='relu'), layers.MaxPooling2D(), layers.Conv2D(32, 3, padding='same', activation='relu'), layers.MaxPooling2D(), layers.Conv2D(64, 3, padding='same', activation='relu'), layers.MaxPooling2D(), layers.Conv2D(128, 3, padding='same', activation='relu'), layers.MaxPooling2D(), layers.Flatten(), layers.Dense(128, activation='relu'), layers.Dense(num_classes)  
+])  
+model.compile(optimizer='adam', loss=tf.keras.losses.SparseCategoricalCrossentropy(from_logits=True), metrics=['accuracy'])  
+epochs=30 history 
+= model.fit(  train_ds,  
+validation_data=val_ds, epochs=epochs  
+)  
+acc = history.history['accuracy'] val_acc 
+=  
+history.history['val_accuracy']  
+loss = history.history['loss'] val_loss = history.history['val_loss'] epochs_range = range(epochs)  
+plt.figure(figsize=(8, 8)) plt.subplot(1, 2, 1) plt.plot(epochs_range, acc, label='Training Accuracy') plt.plot(epochs_range, val_acc, label='Validation Accuracy') plt.legend(loc='lower right') plt.title('Training and Validation Accuracy')  
+plt.subplot(1, 2, 2) plt.plot(epochs_range, loss, label='Training Loss') plt.plot(epochs_range, val_loss, label='Validation Loss') plt.legend(loc='upper right') plt.title('Training and Validation Loss') plt.show()  
+data_augmentation = keras.Sequential(  
+[  
+layers.experimental.preprocessing.RandomFlip("horizonta 
+l", input_shape=(img_height, img_width,  
+3)),  
+layers.experimental.preprocessing.RandomRotation(0.1), layers.experimental.preprocessing.RandomZoom(0.1),  
+]  
+)  
+plt.figure(figsize=(10, 10)) for images, _ in train_ds.take(1): for i in range(6): 
+augmented_images = data_augmentation(images) ax = plt.subplot(3, 3, i + 1)  
+plt.imshow(augmented_images[0].numpy().astype("uin t8")) plt.axis("off")  model = Sequential([  
+data_augmentation,  layers.experimental.preprocessing.Rescaling(1./255) , layers.Conv2D(16, 3, padding='same', activation='relu'), layers.MaxPooling2D(), layers.Conv2D(32, 3, padding='same', activation='relu'), layers.MaxPooling2D(), layers.Conv2D(64, 3, padding='same', activation='relu'), layers.MaxPooling2D(), layers.Dropout(0.3), layers.Flatten(), layers.Dense(128, activation='relu'), layers.Dense(num_classes)  
+])  
+model.summary() model.compile(optimizer='adam',  loss=tf.keras.losses.SparseCategoricalCrossentropy(from_logits=True), metrics=['accuracy'])  
+epochs=30 history 
+= model.fit(  train_ds,  
+validation_data=val_ds, epochs=epochs  
+)  
+acc = history.history['accuracy'] val_acc 
+=  
+history.history['val_accuracy']  
+loss = history.history['loss'] val_loss = history.history['val_loss'] epochs_range = range(epochs) plt.figure(figsize=(8, 8)) plt.subplot(1, 2, 1)  
+plt.plot(epochs_range, acc, label='Training Accuracy') plt.plot(epochs_range, 	val_acc, 	label='Validation Accuracy') 	plt.legend(loc='lower 	right') 
+plt.title('Training and Validation Accuracy')  
+plt.subplot(1, 2, 2) plt.plot(epochs_range, loss,  label='Training Loss') plt.plot(epochs_range, val_loss, label='Validation Loss')  
+plt.legend(loc='upper right') plt.title('Training and Validation Loss') plt.show() import numpy as np  
+from google.colab import files from keras.preprocessing import image uploaded=files.upload()  
+for fn in uploaded.keys():  
+# predicting images path='/content/' + fn img=image.load_img(path, target_size=(180,  180)) plt.imshow(img) x=image.img_to_array(img) test_img=np.expand_dims(x, axis=0)  
+result  =  model.predict(test_img)  pred  = np.argmax(result) # get the index of max value if pred==0:  
+print('aboli') print('The flower is used in various conditions like fever, headache, 
+pain & wound healings') elif pred==1: print('aster') print('The flower is used for decongestion, antispasmodic & relaxation of lungs.')  
+elif pred==2: print('dahlia')  print('The flower prevents constipation')  
+elif pred==3:  
+print('Frangipani') print('The flower is antifugal and antibacterial')  elif pred==4: print('ghaneri') print('The flower is used for 
+treatment of maleria and toothaches.') elif pred==5:  
+print('gokarni') print('The flowers roots, bark, leaves and seeds 
+are used in ayurvedic preparations.') elif pred==6: 
+print('hibiscus') print('The flower is used for treating loss of appetite, cold, heart and nerve disease')  
+elif pred==7:  
+print('marigold') print('The flower treats skin conditions like bruises and minor skin injuries') elif pred==8: print('mogra') print('The flower is used for romoving intestinal worms & used for jaundice.')  
+elif pred==9:  
+print('Paperflower') print('The flower has medicinal properties like antidiabetic activities, anticancer activities, antiioxidant activities. ')  
+elif pred==10:  print('Sacred Datura') print('The flower is poisonous.') elif pred==11: 
+print('sadafuli') print('The flower is used for treating respiratory disorders like asthama, bronchitis, COPD, cough & cold symptoms') elif pred==12: print('terda') print('The flowers juice is used to treat warts and snake bites and is also helpful for burns.') elif pred==13: print('tiger lily') print('The flower is used for treatment of heart diseases') elif pred==14: print('daisy') print('The flower prevents disorders of liver and kidney, and swelling')  
+elif pred==15:  
+print('dandelion') print('The flower treats viral and urinary tract infections as well as cancer')  
+elif pred==16:  
+print('gulmohar') print('The flower has medicinal properties like antidiabetic activities, antibacterial activities, antiinflamatory activities. ')  elif pred==17: print('rose') print('The petals of the flower improves 
+digestion and sooths menstrual cramps') elif pred==18:  
+print('sunflower') print('The flower tea is used for lung aliments and malaria') print('The leaf of the flower reduces high fever')  elif pred==19: print('tulip')  print('The flower treats insect bites')  
+elif pred==20:  
+print('UNDEFINED') print('The flower is 
+not in the dataset provided') else :  
+print('paperflower') print('The flower is antidiabetic and anticancer')  
